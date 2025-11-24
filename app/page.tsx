@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import Navbar from './components/navbar';
 
+// Tambahkan import untuk Leaflet types
+import type { Map } from 'leaflet';
+
 interface Destination {
   id: number;
   title: string;
@@ -15,9 +18,16 @@ interface Destination {
   source: string;
 }
 
+// Deklarasi global untuk Leaflet
+declare global {
+  interface Window {
+    L: typeof import('leaflet');
+  }
+}
+
 export default function Home() {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<L.Map | null>(null);
+  const mapInstance = useRef<Map | null>(null);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
@@ -64,7 +74,7 @@ export default function Home() {
     const loadLeaflet = async () => {
       if (typeof window !== 'undefined' && mapRef.current && !mapInstance.current) {
         // Cek apakah Leaflet sudah dimuat
-        if ((window as any).L) {
+        if (window.L) {
           initializeMap();
           return;
         }
@@ -88,8 +98,8 @@ export default function Home() {
     };
 
     const initializeMap = () => {
-      if (mapRef.current && (window as any).L && destinations.length > 0) {
-        const L = (window as any).L;
+      if (mapRef.current && window.L && destinations.length > 0) {
+        const L = window.L;
         
         // Inisialisasi peta dengan view ke Indonesia
         mapInstance.current = L.map(mapRef.current).setView([-2.5489, 118.0149], 5);
@@ -148,7 +158,7 @@ export default function Home() {
 
           const marker = L.marker(destination.coordinates, {
             icon: customIcon
-          }).addTo(mapInstance.current);
+          }).addTo(mapInstance.current!);
 
           // Popup dengan informasi destinasi
           marker.bindPopup(`
@@ -173,7 +183,7 @@ export default function Home() {
         });
 
         // Fit bounds untuk menampilkan semua marker
-        const group = new L.featureGroup(
+        const group = L.featureGroup(
           destinations.map(dest => L.marker(dest.coordinates))
         );
         mapInstance.current.fitBounds(group.getBounds().pad(0.1));
